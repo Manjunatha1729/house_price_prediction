@@ -14,7 +14,6 @@ uploaded_file = st.file_uploader("📂 Upload your dataset (.csv or .xlsx)", typ
 
 if uploaded_file:
     try:
-        # Read file based on type
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file, encoding='latin1', on_bad_lines='skip')
         else:
@@ -23,16 +22,13 @@ if uploaded_file:
         st.write("✅ **Dataset Preview**")
         st.dataframe(df.head())
 
-        # Required columns check
         required_cols = ['BHK', 'Size (sqft)', 'Region_Type', 'Total_Price']
         if not all(col in df.columns for col in required_cols):
             st.error("Missing required columns: " + ", ".join(required_cols))
         else:
-            # Prepare features & target
             X = df[['BHK', 'Size (sqft)', 'Region_Type']]
             y = df['Total_Price']
 
-            # Preprocessing pipeline
             preprocessor = ColumnTransformer(
                 transformers=[
                     ('cat', OneHotEncoder(handle_unknown='ignore'), ['Region_Type'])
@@ -45,17 +41,14 @@ if uploaded_file:
                 ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
             ])
 
-            # Train/test split
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
             model.fit(X_train, y_train)
 
-            # Evaluation
             y_pred = model.predict(X_test)
             st.write("📈 **Model Performance**")
             st.write("MAE:", round(mean_absolute_error(y_test, y_pred), 2))
             st.write("R² Score:", round(r2_score(y_test, y_pred), 4))
 
-            # Sidebar input
             st.sidebar.header("🏗️ Enter House Details")
 
             input_region = st.sidebar.selectbox("Select Region", df['Region_Type'].unique())
@@ -69,7 +62,7 @@ if uploaded_file:
             }])
 
             predicted_price = model.predict(input_data)[0]
-            predicted_price = max(100000, predicted_price)  # Clamp negative predictions
+            predicted_price = max(100000, predicted_price)
 
             st.sidebar.subheader("💰 Predicted Price")
             st.sidebar.success(f"₹ {predicted_price:,.2f}")
